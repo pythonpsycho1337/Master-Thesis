@@ -6,9 +6,12 @@
 \usepackage{hyperref}
 \usepackage{amsthm}
 \usepackage{amsmath}
+\usepackage{mathtools}
 \usepackage{listings}
 \usepackage{minted}
 \usepackage{tcolorbox}
+\usepackage{color}
+\usepackage{mips}
 
 \usepackage{etoolbox}%Used? 
 
@@ -54,18 +57,39 @@
 
 \renewcommand\fcolorbox[4][]{\textcolor{cyan}{\strut#4}} %Remove minted error boxes
 
-\lstset{columns=fullflexible,
+
+%TODO: avoid using linespread, instead see ans two of https://tex.stackexchange.com/questions/30516/how-to-avoid-background-frame-break-in-code-listings-with-math-mathescape
+\lstdefinestyle{frame}{
+        columns=fullflexible,
+        frame=single,
         mathescape=true,
-        literate=
-               {<-}{$\leftarrow{}$}{1},
         tabsize=4,
-        frame = single,
 }
-        
+
+\lstdefinestyle{abstractInt}{
+        aboveskip=1.4em,
+        basicstyle=\linespread{2}\ttfamily\small,
+        belowskip=0em,
+        columns=fullflexible,
+        frame=single,
+        mathescape=true,
+        tabsize=4,
+}
+
+\lstdefinestyle{algorithm}{
+    basicstyle=\linespread{1.2}\small,
+    columns=fullflexible,
+    emph={Input,Output,if,else,foreach,for,while,return},
+    emphstyle=\textbf,
+    frame=single,
+    mathescape=true,
+    tabsize=4,
+}
+
 \lstdefinestyle{top}{
+  abovecaptionskip=-1pt
   float=tp,
   floatplacement=tbp,
-  abovecaptionskip=-1pt
 }
 
 % Uncomment the next line to include cover generated at https://intra.kth.se/kth-cover?l=en
@@ -76,6 +100,7 @@
 %A conscientiously written scientific report in Swedish or English where the problem is introduced, different methods for the solution are discussed, the method chosen is presented, the solution and the results are described and the results are analyzed
 
 %---Before Handing in the Report--
+%Check if roman numbering should include list of tables/figures
 
 %Content checklist: https://www.kth.se/social/group/examensarbete-vid-cs/page/degree-project-checklist/
 
@@ -91,6 +116,7 @@
 %---------------------------------
 %---Potential things to add---
 % Info on stripped vs non-stripped binaries
+% Lattice background?
 %---------------------------------
 
 \begin{document}
@@ -143,6 +169,12 @@
 \textbf{Jump table:} A data structure which sometimes results from switch cases and frequently leads to indirect jumps. \\
 %\textbf{Transpilation:} The act of translating a binary program into its equivalent IL program\\
 
+\listoffigures
+\thispagestyle{empty}
+ 
+\listoftables
+\thispagestyle{empty}
+
 % Mainmatter is where the actual contents of the thesis goes
 \mainmatter
 \cleardoublepage
@@ -178,7 +210,7 @@ In this thesis, we investigate an approach based on alternating over/under-appro
 \section{Related Work}
 %Goal: What has been done? What hasn't been done? What can I contribute with? Why would that be important? 
 %Codesurfer? BitBlaze?
-There have been many approaches to control flow graph reconstruction through the last couple of centuries. However, to our best knowledge, no one has succeeded in developing an algorithm that can construct the ideal CFG for an arbitrary binary. There are however many platforms that can create approximations of the ideal CFG. The approach described in this paper differs from others in the sense that it gives up on properties such as soundness and completeness to completely focus on precision. 
+There have been many approaches to control flow graph reconstruction through the last couple of centuries. However, to our best knowledge, no one has succeeded in developing an algorithm that can construct the ideal CFG for an arbitrary binary. There are, however, many platforms that can create approximations of the ideal CFG. The approach described in this paper differs from others in the sense that it gives up on properties such as soundness and completeness to completely focus on precision. 
 \\ \\
 Angr\cite{angr} is a state-of-the art binary analysis platform for exploit generation. It was created as part of the DARPA challenge and was used by the team Shellphish. It is heaviliy modularized and has borrowed the intermediate language VEX from valgrind, a platform which focuses on finding memory leaks in programs. The angr project contains two CFG reconstruction algorithms named \textit{CFGAccurate} and \textit{CFGFast}. The \textit{CFGFast} is a purely static analysis algorithm while \textit{CFGAccurate} leverages dynamic analysis through its dynamic symbolic execution engine. 
 \\ \\
@@ -239,7 +271,7 @@ Table \ref{tab:jumps} provides examples illustrating the difference between cond
 \multicolumn{1}{|l|}{\textbf{Conditional}}   & \multicolumn{1}{l|}{je 0x00401078}     & \multicolumn{1}{l|}{je eax}            &  &  \\ \cline{1-3}
                                              &                                      &                                        &  &
 \end{tabular}
-\caption{A table illustrating the difference between unconditional and conditional jump instructions as well as direct and indirect jump instructions.}
+\caption[A table illustrating the difference between unconditional and conditional jump instructions as well as direct and indirect jump instructions.]{A table illustrating the difference between unconditional and conditional jump instructions as well as direct and indirect jump instructions.}
 \label{tab:jumps}
 \end{table}
 \noindent
@@ -258,9 +290,9 @@ Before a conditional jump is executed, the CPU usually executes some sort of com
 \\ \\
 Furthermore, the \textit{PF} flag is set if the difference has an even number of set bits and the \textit{CF} flag is set if the second argument would be greater than the first in an unsigned comparision. Finally, the \textit{OF} flag is set if the sign bit of the first argument does not equal the sign bit of the result and the \textit{AF} flag is set if the four least significant bits of the results did not result in a carry. When executing one of the \textit{je} instruction in the above examples, the CPU would check that the \textit{ZF} flag is set before performing a jump to the specified location since the \textit{je} instruction only jumps on equality.
 \\ \\
-Apart from jump instructions, there are also \textit{call} instructions which can alter the control flow of a program. Normally, \textit{call} instructions are used to invoke a procedure. Initially, the program pushes it's arguments to the stack (Or alternatively puts them in registers). Thereafter, the program executes the call instruction, which is a push of a return address to the stack and an unconditional jump to the start of the procedure. At the end of the proceddure, there is usually a return instruction \textit{RET}. The \textit{RET} instruction pops the stack to obtain the return address that was pushed by the call instruction. Then, it instructs the CPU to perform and unconditional jump to the obtained return address. 
+Apart from jump instructions, there are also \textit{call} instructions which can alter the control flow of a program. Normally, \textit{call} instructions are used to invoke a procedure. Initially, the program pushes it's arguments to the stack (Or alternatively puts them in registers). Thereafter, the program executes the call instruction, which is a push of a return address to the stack and an unconditional jump to the start of the procedure. At the end of the proceddure, there is usually a return instruction \textit{ret}. The \textit{ret} instruction pops the stack to obtain the return address that was pushed by the call instruction. Then, it instructs the CPU to perform and unconditional jump to the obtained return address. 
 \\ \\ 
-In this work, the theoretical framework of the over-approximation treats \textit{call} instructions in the same way as unconditional \textit{jmp} instructions.
+In this work, the theoretical framework of the over-approximation treats \textit{call} instructions in the same way as unconditional \textit{jmp} instructions. Furthermore, \textit{ret} instructions are treated as indirect jumps whose targets is located in memory.
 
 %Control flow graph have one entry node but might have multiple exit nodes. Can also have multiple input nodes if one only looks at part of the program. For example, if one would like to reconstruct the CFG of a funciton, this function might be called from multiple positions in the program.
 %"They explain that indirect jumps have five major sources: switch-statements implemented with a table lookup and indirect jump, exception handling, goto statements to pointer assigned labels and use of procedure pointers and dynamic method invocation in object oriented languages." lit stud
@@ -279,62 +311,65 @@ A Basic Block Graph(BBG) is defined as a directed graph G = (V,E) where V is a s
 \\ \\ 
 Denote by $Stmt$ the set of basic and abstract statements. Further, denote by $L \in I_{32}$ the set of potential values of the instruction pointer. Then, a Control Flow Automaton(CFA) is defined as a tuple <$T,V,start,E$>, where $T \subseteq L$ is the set of program locations, $V$ is the set of registers, $start$ is an initial location such that $start \in T$ and $E$ is an edge relation $E \subseteq T \times Stmt \times T$. 
 \\ \\
-When a CFA is depicted as a graph, the nodes represent logical states $T \times V$ in the program and edges correspond to statements in the relation $E$. An advantage of CFA:s over BBG:s is that their nodes naturally correspond to program states and the edges corresponds to state transformations\cite{Jakstab}. Consequently, as a BBG can only represent connections between instructions, CFA:s can more accurately represent the control flow of a binary than BBG. 
+When a CFA is depicted as a graph, the nodes represent logical states $T \times V$ in the program and edges correspond to statements in the relation $E$. An advantage of CFA:s over BBG:s is that their nodes naturally correspond to program states and the edges corresponds to state transformations\cite{Jakstab}. Consequently, as a BBG can only represent connections between instructions, CFA:s can more accurately represent the control flow of binaries than BBG:s. 
 \\ \\
-To better understand this, consider the assembly code in figure \ref{fig:assembly}. The string "Hello World!" is stored in the data section of the binary and the text section contains the code for writing "Hello World!" to stdout ten times. The code contains the labels start, dec, print and quit as these can be used as jump targets for the jump instructions. Initially, the program sets the value of edi to 10 as this register is used to count how many times the string has been printed to stdout.
+To better understand this, consider the assembly code in Figure \ref{fig:assembly}. The string "Hello World!" is stored in the data section of the binary and the text section contains the code for writing "Hello World!" to stdout ten times. The code contains the labels start, compare, print and quit as these can be used as jump targets for the jump instructions. Initially, the program sets the value of edi to 10 as this register is used to count how many times the string has been printed to stdout.
 \\ \\
 The program then compares $edi$ to 0 and jumps to \it{quits} if this holds. Then, it decrements $edi$ by 1 and fills the registers with values for performing a system call to write the string to stdout. The register $edx$ is set to the length of the string, $ecx$ to the address of the string, $ebx$ to the file descriptor of stdout and $eax$ to the opcode of the write instruction. After the write it jumps back to the compare instruction. to check if $edi$ is still more than 0. 
 %See page 119 in jakstab thesis for pros and cons with cfa vs bbg
 \begin{figure}[t]
     \centering
 \begin{tcolorbox}
-\begin{minted}[fontsize=\footnotesize]{gas}
+\begin{minted}[fontsize=\footnotesize]{nasm}
 SECTION .data
 msg     db      'Hello World!', 0x0A
 
 SECTION .text
 start:
-        mov edi,10  ;Set the edi register to 10
-dec:
-        cmp edi,0   ;Compare edi with 0
-        je quit     ;Jump to quit if edi=0
+        mov edi,10      ;Set the edi register to 10
+compare:
+        cmp edi,0       ;Compare edi with 0
+        je quit         ;Jump to quit if edi=0
 print:
-        dec edi     ;Decrement edi by 1
-        mov edx, 13 ;Set edx to 13
-        mov ecx, msg;Set ecx to the address of msg
-        mov ebx, 1  ;Set ebx to 1
-        mov eax, 4  ;Set eax to the opcode of write
-        int 0x80    ;Perform the syscall
-        jmp dec     ;Jump to dec
+        dec edi         ;Decrement edi by 1
+        mov edx, 13     ;Set edx to the length of msg
+        mov ecx, msg    ;Set ecx to the address of msg
+        mov ebx, 1      ;Set ebx to standard out
+        mov eax, 4      ;Set eax to the opcode of write
+        int 0x80        ;Perform the syscall
+        jmp compare     ;Jump to compare
 quit:
-        mov ebx, 0  ;Set ebx to 0
-        mov eax, 1  ;Set eax to the opcode of exit
-        int 0x80    ;Perform the syscall
+        mov ebx, 0      ;Set ebx to 0
+        mov eax, 1      ;Set eax to the opcode of exit
+        int 0x80        ;Perform the syscall
 \end{minted}
 \end{tcolorbox}
-\caption{Assembly code of the example BBG and CFA graphs.}
+\clearpage
+\caption[Assembly code of the example BBG and CFA graphs.]{Assembly code of the example BBG and CFA graphs.}
     \label{fig:assembly}
 \end{figure}
 
-
 \begin{figure}[ht]
     \centering
-    \includegraphics[scale=0.6]{Images/CFGExample.png}
-    \caption{The BBG of the "Hello World!" Program. True and false branch conditions are illustrated with green and red arrows respectively.}
+    \includegraphics[scale=0.6]{Images/BBGExample.png}
+    \caption[The BBG of the "Hello World!" Program.]{The BBG of the "Hello World!" Program. True and false branch conditions are illustrated with green and red arrows respectively.}
     \label{fig:HelloBBG}
 \end{figure}
 \clearpage
 \noindent
-The BBG of the hello-world program is illustrated in figure \ref{fig:HelloBBG}. There are multiple problems with the BBG. Firstly, from the BBG, it appears that a possible path could be \it{start}, \it{dec} and \it{quit}. However, this path is not possible in practice. Furthermore, from the BBG it is also not possible to tell if the program will ever terminate without studying the assembly code. This is because it appears that the program could execute \it{start} and then get stuck in an infinite loop between \it{check} and \it{print}.
+The BBG of the hello-world program is illustrated in Figure \ref{fig:HelloBBG}. There are multiple problems with the BBG. Firstly, from the BBG, it appears that a possible path could be \it{start}, \it{compare} and \it{quit}. However, this path is not possible in practice. Furthermore, from the BBG it is also not possible to tell if the program will ever terminate without studying the assembly code. This is because it appears that the program could execute \it{start} and then get stuck in an infinite loop between \it{compare} and \it{print}.
 \begin{figure}[th]
     \centering
     \includegraphics[scale=0.4]{Images/CFA.png}
-    \caption{The CFA of the "Hello World!" Program. True and false branch conditions are illustrated with green and red arrows respectively.}
+    \caption[The ideal CFA of the "Hello World!" Program.]{The ideal CFA of the "Hello World!" Program. True and false branch conditions are illustrated with green and red arrows respectively.}
     \label{fig:HelloCFA}
 \end{figure}
 \noindent
 \\
-In the CFA of the hello-world program, which is depicted in figure \ref{fig:HelloCFA}, there is only one possible path. This is because a node is no longer a group of instructions but rather a set of register values which represent the state of the CPU. Consequently, state 2, 14 and 91 are distinct as they differ in the $edi$ value. More specifically, in this example, state 2, 14 and 91 correspond to $edi=10$, $edi=9$ and $edi=0$ respectively. Note, that conditional jump instructions does not have to correspond to two possible edges as the condition can be fully determined by the state. 
+In the CFA of the hello-world program, which is depicted in Figure \ref{fig:HelloCFA}, there is only one possible path. This is because a node is no longer a group of instructions but rather a set of register values which represent the state of the CPU. Consequently, state 2, 14 and 91 are distinct as they differ in the $edi$ value. More specifically, in this example, state 2, 14 and 91 correspond to $edi=10$, $edi=9$ and $edi=0$ respectively. Note, that conditional jump instructions do not always have to correspond to two possible edges as the condition can be fully determined by the state.
+%Add assumptions for figure 2.3(CFA of helloworld, i.e abs dom models all reg and mem content  note no socket, random numbers or file reads!)
+%Add example depicting a bad abstraction that does not have deterministic state transitions.
+%CFA with loop terminates but CFA without loop we don't know if it terminates
 \\ \\
 A problem with the usage of BBG:s when representing control flow is, for example, when conducting control flow integrity checks. When Control flow integrity checks are performed, the auditing software performing this checks uses information about what instructions can transfer control flow to which locations. It then audits executing programs to verify that all control flow transfers are performed according to these targets. If, however, a BBG is used, an attacker could enter a basic block from one edge and exit from an edge that shouldn't be feasible in practice when the entry edge was used. For example, if an attacker could manipulate the control flow of the hello world program so that it executed start, check and quit, this would be undetected by the control flow integrity checks. 
 %Mention example of control flow integrity(A CFG overapproximates double function calls, thus, using control flow hijacking it is possible to jump somewhere it shouldn't be possible)
@@ -342,24 +377,24 @@ A problem with the usage of BBG:s when representing control flow is, for example
 \begin{figure}[t]
     \centering
     \includegraphics[scale=0.6]{Images/SoundCompleteGraph.png}
-    \caption{An example of soundness and completeness in CFG:s. The left-most graph is the ideal CFG, the middle graph is a complete approximation of the ideal CFG and the right-most graph is a sound approximation of the ideal CFG. The transparent nodes/arrows denote unidentified parts of the graph and yellow arrows denotes falsely identified edges.}
+    \caption[An example of soundness and completeness in CFG:s.]{An example of soundness and completeness in CFG:s. The left-most graph is the ideal CFG, the middle graph is a complete approximation of the ideal CFG and the right-most graph is a sound approximation of the ideal CFG. The transparent nodes/arrows denote unidentified parts of the graph and yellow arrows denotes falsely identified edges.}
     \label{fig:SoundCompleteGraph}
 \end{figure}
 \\ \\
 Two desirable properties of CFG:s are soundness and completeness\cite{angr}. Soundness is defined as the extent to which the CFG contains the correct control flow transitions. Thus a CFG is said to be sound if and only if, it contains all the control flow transitions. Similarly, completeness of a CFG is the extent to which the CFG only contains correct control flow transitions. Consequently, a CFG is said to be complete if and only if, it only contains correct potential control flow transfers. 
 \\ \\
 Figure \ref{fig:SoundCompleteGraph} presents the ideal CFG, a complete under-approximation of the ideal CFG and a sound over-approximation of the CFG for some fictional binary program. The middle graph is complete since it contains all edges of the ideal graph. However, during reconstruction of this graph, the edge between node 1 and 2 were missed. Consequently, all nodes after 2 were missed as well. One could imagine that there could be more instructions after node 2 that could only be reached through the edge between node 1 and 2. Thus, missing one edge durin the control flow graph reconstruction can lead to a cascading loss of precision. 
-The right-most graph of figure \ref{fig:SoundCompleteGraph} is a sound over-approximation of the ideal CFG.
+The right-most graph of Figure \ref{fig:SoundCompleteGraph} is a sound over-approximation of the ideal CFG.
 \\ \\
 The only problem with this graph is that the edge between node 2 and 5 has been added. This might, at first glance, not seem very problematic. However, it can, for example, be a security risk during control flow integrity checks. Furthermore, if there are a large amount of falsely identified nodes or edges the reconstruction time and memory usage can be significantly affected. In other words, over-approximation can consume significantly more time and memory resources than under-approximation since it has to explore more nodes and edges\cite{alternating}.
 \\ \\
-As there are currently no known polynomial time algorithms for creating the optimal CFG of an arbitrary binary, many earlier studies has resorted to under or over-approximation approaches\cite{preciseCFGBoolean}. As purely over-approximating approaches, by definition, does not miss any edges of the ideal CFG, they are sound. Conversely, as under-approximation approaches never include superfluous edges, they are complete. In this thesis we are, however, only interested in the precision of the generated CFG.
+As there are currently no known polynomial time algorithms for creating the optimal CFG of an arbitrary binary, several researchers have resorted to under and/or over-approximation approaches\cite{preciseCFGBoolean}\cite{preciseCFG}\cite{CFGFromPowerPC}\cite{angr}. As purely over-approximating approaches, by definition, does not miss any edges of the ideal CFG, they are sound. Conversely, as under-approximation approaches never include superfluous edges, they are complete. In this thesis we are, however, only interested in the precision of the generated CFG.
 \\ \\
 The preciseness of a CFG can informally be thought of as the difference in the amount of edges and nodes of the subject CFG and the ideal CFG. Thus, a complete CFG with 10 superflous edges is more precise than a complete CFG with 20 superflous edges. A formal definition of preciseness of a CFG is provided in section \ref{sec:metrics}.
 \\ \\
-Unresolved indirect jumps primarily stems from the difficulty in resolving indirect jumps. Resolving indirect jumps requires data flow analysis which requires a CFG. However, CFG reconstruction requires resolving indirect jumps. Thus, there is a circular dependency. In the context of static analysis, this is referred to as the "chicken and egg" problem\cite{Jakstab}.
-\\ \\s
-In this work we do not distinguish between intra and inter-procedural branch instructions. Consequently, we do not use intra-procedural and inter-procedural CFG:s.s
+Unresolved control flow transitions primarily stems from the difficulty in resolving indirect jumps. Resolving indirect jumps requires data flow analysis which requires a CFG. However, CFG reconstruction requires resolving indirect jumps. Thus, there is a circular dependency. In the context of static analysis, this is referred to as the "chicken and egg" problem\cite{Jakstab}.
+\\ \\
+In this work we do not distinguish between intra and inter-procedural branch instructions. Consequently, we do not use intra-procedural and inter-procedural CFG:s.
 
 %-(Precise Control Flow Reconstruction Using Boolean Logic)-
 %"Apart from switch-case statements, compilers generate indirect jumps/calls for function pointers or virtual methods."
@@ -384,15 +419,16 @@ In this work we do not distinguish between intra and inter-procedural branch ins
 %Jakstab: "Call strings, however, are tied to the concept of procedures (which is unreliable in x86 assembly) and assume the existence of a separate call stack. This issue lead to the design of the path sensitive analysis presented in this dissertation."(Comparing jakstab with codesurfer)
 
 \section{Static and Dynamic Analysis}
+%https://www.cs.cmu.edu/~aldrich/courses/654-sp08/slides/11-dataflow.pdf "static analysis can find mechanical errors" p7
 %Binary Analysis platforms. Microsoft Boogie, Valgrind, LLVM and Mayhem.
 %see "static Disassembly and Code Analysis"
 %Techniques such as abstract interpretation, constraint solving, and type systems may be used for control-flow analysis.
-The goal of static and dynamic analysis techniques is to determine properties and
+The goal of static and dynamic analysis techniques are to determine properties and
 functions of a program\cite{staticOfInd}. Static analysis is an umbrella term for all methods of program analysis which are conducted by examining a program without subjecting it to any concrete executions. Conversely, dynamic analysis comprises all of the program analysis techniques which are based on concrete executions of the studied program. Furthermore, when the two types of techniques are mixed together, they are sometimes referred to as glass-box testing techniques\cite{DefinitionStaticAnal}.
 \\ \\
 Binary analysis platforms which leverage Static analysis techniques usually constitute of a hardware-independent representation, a mechanism to translate architecture dependent binaries to this representation as well as several architecture independent analyses that processes the hardware-independent representation\cite{TrABin}. Formally, the intermediate representation is normally represented using abstract interpretation\cite{Jakstab}. Abstract interpretation will be further described in section \ref{sec:AbsInt}.
 \subsection{Disassembly in Static Analysis}
-A core issue related to the analysis of programs is the undecidable problem of distinguishing code from data\cite{ABinaryRewriting}. As a consequence, static analysis techniques require some sort of techniques which identify what bytes of a binary should be disassembled and then disassembles these bytes. These techniques are referred to as static disassembly techniques. Static disassembly techniques can, in general, be categorized as either being based on either a linear sweep approach or recursive traversal approach\cite{DisassemblyOfExecutable}. It should, however, be noted that none of these two approach are 100\% precise\cite{ABinaryRewriting}. Furthermore, there are also techniques which can not be categorized into these two categories such as, for example, speculative disassembly\cite{preciseCFG}
+A core issue related to the analysis of programs is the undecidable problem of distinguishing code from data\cite{ABinaryRewriting}. As a consequence, static analysis techniques require some sort of techniques which identify what bytes of a binary should be disassembled and then disassembles these bytes. These techniques are referred to as static disassembly techniques. Static disassembly techniques can, in general, be categorized as either being based on either a linear sweep approach or recursive traversal approach\cite{DisassemblyOfExecutable}. It should, however, be noted that none of these two approach are 100\% precise\cite{ABinaryRewriting}. Furthermore, there are also techniques which can not be categorized into these two categories such as, for example, speculative disassembly\cite{preciseCFG}.
 \\ \\
 Linear sweep approaches starts by disassembling the first byte at the start of a the code section and then simply disassembles one byte after the other until an illegal instruction is encountered\cite{ABinaryRewriting}. This makes linear sweep based disassemblers easy to thwart as an attacker can simply place a jump in front of some malformed instructions. This would make the control flow follow the jump instruction to pass the malformed code but could stop linear sweep disassemblers as they could potentially be unable to disassemble the malformed instructions\cite{ABinaryRewriting}. Some examples of linear disassembly tools are objdump, WinDbg and SoftICE\cite{ReversingSecretsofReverseEngineering}.
 \\ \\ 
@@ -423,29 +459,34 @@ In this work, both static and dynamic analysis techniques are used to reconstruc
 
 \section{Abstract Interpretation}\label{sec:AbsInt}
 %See summary of https://www.youtube.com/watch?v=EF_6QaQ_M-s&t=20s
-Abstract Interpretation is a technique where concrete objects are represented as abstract objects. In general, there is a monotonic function, denoted by $\alpha$, converting a concrete object into its corresponding abstract representation. This function is usually referred to as the abstraction or representation function. Conversely, there is a monotonic function, denoted by $\gamma$, converting an abstract object into its corresponding concrete object. This function is referred to as the concretization function
+Abstract interpretation is a technique where concrete objects are represented as abstract objects. In general, there is a monotonic function, denoted by $\alpha$, converting a concrete element into its corresponding abstract representation. This function is usually referred to as the abstraction or representation function. Conversely, there is a monotonic function, denoted by $\gamma$, converting an abstract object into its corresponding concrete object. This function is referred to as the concretization function
 \\ \\%Is this rice's theorem? 
 The reason for not carrying out analysis directly using concrete semantics is that it is not possible to create a program which is able to represent and compute all possible executions of any program in all its possible execution environments\parencite{FRPatrick}. Consequently, all non-trivial questions about the concrete semantics of a program are undecidable. However, if one uses abstraction to only include properties which are of interest to the analysis, it can be possible to analyze the selected properties in finite time. Thus, by abstracting a program to an abstract interpretation, it is possible to analyze the relevant properties in less than infinite time.
 \\ \\
-To be able to understand Abstract Interpretation, one first need to understand partially ordered sets\parencite{EoMPoset}, correspondence\parencite{EoMCorrespondence} and Galois connections\cite{galoisConnections}. A partially ordered set consists of a set and a binary relation such that the binary relation, given two elements, indicate which of the elements should precede the other or if neither of them precedes the other. Additionally, the binary relation must be reflexive, anti-symmetric and transitive. The difference between partially and totally ordered sets is that the former allows elements in the set to be incomparable while the latter requires every pair of elements, belonging to the set, to be comparable.
+To be able to understand abstract interpretation, one first need to understand partially ordered sets\parencite{EoMPoset}, correspondence\parencite{EoMCorrespondence} and Galois connections\cite{galoisConnections}. A partially ordered set(poset) consists of a set and a binary relation such that the binary relation, given two elements, indicate which of the elements should precede the other or that neither of them precedes the other. Additionally, the binary relation must be reflexive, anti-symmetric and transitive. The difference between partially and totally ordered sets is that the former allows elements in the set to be incomparable while the latter requires every pair of elements, belonging to the set, to be comparable.
 \\ \\
-A correspondence is
-\\ \\
-A Galois connection is a partial correspondence between two partially ordered sets. Abstract interpretation is a Galois connection between concrete and abstract semantics.
+A correspondence is a generalization of a binary relation which operators on two sets or mathematical structures of the same type. A correspondence between two sets A and B is any subset of $A \times B$. A Galois connection is a correspondence between two partially ordered sets. There are two types of galois connections: monotone and antitone. This thesis uses monotone galois connections. Consequently, when a galois connection is mentioned, it reefers to a monotone galois connection.
+\begin{definition} \textbf{Galois Connection}\\
+Let $(A, \sqsupseteq_A)$ and $(B, \sqsupseteq_B)$ be two partially ordered sets. Furthermore, let F and G be monotone functions such that  $F : A \rightarrow B$ and $G : B \rightarrow A$. Then, ${(A, \sqsupseteq_A)}$, (B, $\sqsupseteq_B$), $F$ and $G$ form a Galois connection  if for all $a \in A$ and $b \in B$:
+\makebox[\linewidth]{$F(a) \sqsupseteq_B b$ if and only if $a \sqsupseteq_A G(b)$}
+\end{definition}
+\noindent
+In abstract interpretation, a Galois connection is established between a concrete and an abstract domain. The abstraction function $\alpha$ and the concretization function $\gamma$ correspond to the functions F and G in the definition above. Furthermore, the two posets in the definition corresponds to the abstract and concrete domain. More specifically, in abstract interpretation, the posets are typically lattices.
+\\ \\%https://en.wikipedia.org/wiki/Lattice_(order)
+A lattice is a poset where every pair of elements have a unique least upper bound and a unique greatest lower bound. The least upper bound is also known as the supremum or join. Similarly, the greatest lower bound is also known as the infimum or meet. Furthermore, if a poset only satisfiy the requirement that each pair of elements have a unique least upper bound it is a join-semilattice. Similarly, if a poset only satisfiy the requirement that each pair of elements have a unique greates lower bound it is a join-semilattice. Thus, a lattice could also be defined as a poset which is both a join-semilattice and a meet-semilattice.
+
+%Galois connections between concrete and abstract semantics, widenings and narrowings
 
 %Complete lattice?
-
 %Abstract Domain
 
-%Abstract semantics are a superset of the concrete semantics (https://www.di.ens.fr/~cousot/AI/IntroAbsInt.html#Cousot81-1)
-
 %Ascending chain condition
+
+%Abstract semantics are a superset of the concrete semantics (https://www.di.ens.fr/~cousot/AI/IntroAbsInt.html#Cousot81-1)
 
 %We say that an abstraction is sound (or correct) if the abstract semantics covers all possible cases of the concrete semantics. All formal methods are required to use sound abstractions: if a potential error is not signaled that it should be definitely impossible. Contrary to testing/debugging formal methods provide full coverage.(https://www.di.ens.fr/~cousot/AI/IntroAbsInt.html#Cousot81-1)
 
 %To be a partial order, a binary relation must be reflexive (each element is comparable to itself), antisymmetric (no two different elements precede each other), and transitive (the start of a chain of precedence relations must precede the end of the chain). 
-
-%Galois connections between concrete and abstract semantics, widenings and narrowings
 
 %"Intervals are better than exact sets because with exact sets algorithms used can be guaranted to finish in finite time."(powerpc?) 
 %Rice's theorem
@@ -458,8 +499,6 @@ A Galois connection is a partial correspondence between two partially ordered se
 %A partially ordered set that is both a join-semilattice and a meet-semilattice is a lattice.
 %https://en.wikipedia.org/wiki/Join_and_meet
 
-\section{Abstract Domains}
-
 \section{Fuzzing}
 Fuzzing techniques are in general categorized as black-box, gray-box or white-box techniques\cite{fuzzingSurvey}. Black-box techniques are techniques which treats the Program Under Test(PUT) as a black box. Thus, black-box techniques only observes the input and output of the PUT. Conversely, white-box techniques are techniques which exploit knowledge of the internals of the PUT. Furthermore, Gray-box techniques are techniques which can not be categorized as purely white or black-box as they uses a mixture of the two techniques. As black box fuzzing typically exhibits low coverage, black-box techniques are typically not of interest in the context of CFG reconstruction\cite{fuzzingSurvey}. 
 \\ \\
@@ -470,6 +509,8 @@ White-box techniques are usually some sort of guided fuzzing, PUT mutation or Dy
 During DSE, which is also known as concolic execution, the program is initially executed with an initial input. The input is then given to the PUT in what is denoted as a concrete execution. During the concrete execution, symbolic expressions are recorded for the passed branches. Thereafter, an smt solver can be given a variation of the obtained constraints to create a set of inputs that would take a specific path in the binary. This technique is has the advantage of being more likely to generate inputs that improve coverage than random inputs. On the other hand, a disadvantage of using whitebox techniques is that they are often slower than gray or black-box techniques. 
 \\ \\
 Constraint-based fuzzing techniques like DSE focus on solving constraints to create inputs that take different paths in the PUT. Consequently, this is a more attractive technique than mutation based fuzzing when one wants to reconstruct the control flow of a PUT. Therefore, this project focused on developing a DSE with a score-based algorithm similarly to the algorithm used by Godefroid et al\cite{automatedFuzzing}. This algorithm used a score-based evaluation to ensure that the generated input values result in the usage of as many new branches as possible. Consequently, maximizing the amount of new CFG edges with respect to the number of calls to the expensive SMT solver\cite{automatedFuzzing}. Consequently, the path explosion problem is mitigated, favoring scalability.
+\\ \\
+In this thesis, we conduct directed symbolic execution.
 
 %In this project we take inspiration from fuzzing techniques to address the problem of under-approximating CFGs.
 %"What you fuzz is what you chip" https://queue.acm.org/detail.cfm?id=2094081
@@ -478,13 +519,50 @@ Constraint-based fuzzing techniques like DSE focus on solving constraints to cre
 %"This problem motivates the use of seed-based input generation as well as white-box input generation" (fuzzing Survey from 2019)
 %Explain why white-box fuzz-testing
 
-\section{Dataflow analysis}
 %https://homepages.dcc.ufmg.br/~fernando/classes/dcc888/ementa/slides/WorkList.pdf Worklist algo
+%https://www.cs.cmu.edu/afs/cs/academic/class/15745-s03/public/lectures/L4_handouts.pdf
+\section{Dataflow Analysis}
+Dataflow analysis is the problem of, for each program location, assigning a lattice element which over-approximates the possible concrete states at that program location\cite{cpaAlgo}. Usually dataflow analysis uses the program's BBG to determine to which parts of the program, values of variables might propagate. The most precise over-approximation can be determined by determining the least fixpoint. This can be done by applying the transfer relation to abstract states and join the result with previous result at the corresponding program location. To determine whether the fixpoint has been reached or not, it is common to use a worklist which stores dataflow facts\cite{cpaAlgo}.
+\\ \\
+Techniques for dataflow analysis can be categorized into two categories; forward flow and backward flow analysis. In forward flow analysis, each exit node of a basic block is expressed as a function of the entry node of the basic block. Conversely, in backward flow analysis, entry nodes are expressed as functions exit node of the corresponding basic blocks. This funciton is referred to as the transfer function. The semantics of the transition function is defined by the semantics of the instructions inside the basic blocks. Forward analysis typically requires an initial entry state to be defined. This entry state is used as the starting point o the propagation of dataflow information and can, for example, contain the fact that no variables have any known values. Similarly, backward flow analysis requires an initial exit state to be known. Examples of forward and backward flow analysis techniques are reaching definitions and liveness analysis respectively.
+\\ \\
+It is possible to conduct dataflow analysis techniques on a different granularity than basic blocks. For example, they can be conducted on the instruction level, using a relation between the entry node and exit node of each instruction. This is normally referred to as local analysis\cite{carneigeDataFlow}. However, it is more common to work at the basic block level and then use local analysis inside basic blocks when instruction-level dataflow information is desired\cite{carneigeDataFlow}.
+%http://web.cs.iastate.edu/~weile/cs641/5.DataFlowAnalysis.pdf
+\begin{figure}[t]
+    \centering
+\begin{lstlisting}[escapeinside={(*}{*)},style=algorithm]
+in[$B_s$] = $X_0$
+for each basic block $B$
+    out[$B$] = $\top$
+    
+$worklist$ = {$B$: for all basic blocks $B$}
+while($worklist \neq \emptyset$)
+    $B$ = remove($worklist$)
+    in[$B$] = $\sqcap$ {out[$B^{'}$]: $B^{'}$ $\in$ pred($B$)}
+    
+    if out[$B$] $\neq$  $F_B($in[$B$]$)$
+        $worklist$ = $worklist$ $\cup$ succ($B$)
+        out[$B$] = $F_B($in[$B$]$)$
+\end{lstlisting}
+\caption[Example of a forward flow analysis worklist algorithm.]{Example of a forward flow analysis worklist algorithm.}
+    \label{fig:WorklistAlgo}
+\end{figure}
+\noindent
+\\ \\
+An example of a worklist algorithm for a forward flow analysis is provided in figure \ref{fig:WorklistAlgo}. This algorithm assumes that a BBG is available to determine the predecessors pred(B) and successors succ(B) of a basic block B. Furthermore, the information of the entry and exit of a basic block B is denoted by in[B] and out[B] respectively. Initially, the  input information of the starting block $B_s$, is set to a specific pre-defined value $X_0$. For each basic block, the exit information is then set to top, meaning that no information is known. The worklist is then initially filled with all basic blocks of the BBG and the while-loop is entered.
+\\ \\
+In the while loop, a random basic block B is removed from the worklist. The entry information of this block is then recalculated depending on the information of its predecessors. Then, the algorithm checks if the new output of $B$, obtained by applying the transfer function $F_B$ to the input information of $B$, is different from the previous output information of B. If this is the case, the output information of B is updated with the new generated information and all successors of B are re-added to the worklist as their input information is dependent on the output information of B.
+\\ \\
+As dataflow requires the BBG whose reconstruction is dependent of dataflow facts, it is not trivial how one would reconstruct one without the other. However, Kinder\cite{Jakstab} devised an algorithm that can perform CFA reconstruction and deductions of dataflow facts simultaneously. In this thesis, this algorithm is used for the over-approximation part of the alternating approach presented in chapter \ref{chap:methodlogy}.
+\\ \\ 
+Dataflow analysis can for example be used for code optimization by avoiding redundant or superflous computations. Furthermore, it can also be used for code validation through invariant generation\cite{BordeauxSoftwareVerification}.
 
-%\section{RTL}
 
-\section{Application Binary Interface}
-An Application binary interface(ABI) defines the rules of communication between a binary and the underlying operating system.
+%Worklist algorithm: https://en.wikipedia.org/wiki/Reaching_definition
+
+
+%\section{Application Binary Interface}
+%An Application binary interface(ABI) defines the rules of communication between a binary and the underlying operating system.
 
 %\section{ELF structure}
 
@@ -493,10 +571,12 @@ An Application binary interface(ABI) defines the rules of communication between 
 %Relevant methods are clearly described and supported by references.
 %The methods are used correctly, the technical content is at an appropriate level.
 
+%Explain Limited depth first search in DSE.java of jakstab
+
 %Jakstab: Pesimisitc vs optimistic vs semi-optimistic. Increase coverage?
 
 %Strong vs weak updates? 
-Reconstructing the CFA of an arbitrary binary is generally considered to be hard\cite{Jakstab}. In this section, our approach of alternating over/under approximation is presented.
+Reconstructing the CFA of an arbitrary binary is generally considered to be hard\cite{Jakstab}. In this section, our approach of alternating over/under approximation is presented. %[Describe outline]
 
 \section{Assumptions and Target Binaries}
 %---Jakstab assumptions---
@@ -505,7 +585,11 @@ Reconstructing the CFA of an arbitrary binary is generally considered to be hard
 %---Manticore assuumptions---
 %
 %
-As the final CFG won't be sound or complete, it won't be of use for binary analysis which requires these properties. For example, it can not be applied to binary verification as this field requires sound over-approximations. Instead, it is of more use when the goal is to recreate a precise CFG at the cost of the soundness and completness properties. For example, more precise CFGs at the cost of soundness are useful in fields such as reverse engineering as reverse engineers' main desire often is a close to the ideal CFG.
+%---Other limitations---
+% No multithreaded binaries as the state space is to large(the order of what thread executes what instructions)
+%
+%
+As the final CFG won't be sound or complete, it won't be of use for binary analysis which requires these properties. For example, it can not be applied to formal verification of binaries as this field requires sound over-approximations. Instead, it is of more use when the goal is to recreate a precise CFG at the cost of the soundness and completness properties. For example, more precise CFGs at the cost of soundness are useful in fields such as reverse engineering as reverse engineers' main desire often is a close to the ideal CFG.
 \\ \\
 Since there are no restrictions on the target binaries except for general assumptions that are required for constant propagation and the white-box fuzzing, the approach will target all types of binaries that satisfy these assumptions. The first assumption is that the code is not self-modifying, as this would make it close to impossible to over-approximate the targets of indirect branches through static analysis. Another assumption is that the stack can not be modified through pointer dereferences or buffer overflows since this could enable arbitrary control flow graphs. Consequently, as malware often use polymorphism and does not always conform to conventions, there can be no guarantees that the CFG can be recovered from arbitrary malware binaries. Rather, the algorithm would be more interesting for studying well-behaved binaries such as drivers. This can, for example, be useful for corporations who wish to verify that the CFG of the shipped binary is the same as the CFG of the source code.
 
@@ -517,7 +601,95 @@ Since there are no restrictions on the target binaries except for general assump
     \item Values of arbitrary bit length can be stored at a single store address and no memory locations overlap
 \end{itemize}
 
+%CPA framework: https://link.springer.com/content/pdf/10.1007%2F978-3-540-73368-3_51.pdf
+\section{Over approximation with Jakstab}
+Jakstab\cite{JakstabGit} is a abstract interpretation based static analysis framework which combines control flow and data flow analysis to resolve the chicken and egg problem of control flow reconstruction. It uses on-demand disassembly and an intermediate language to over overapproximate the CFA of a binary.
+\\ \\
+To abstract the details of assembly language while still capturing its relevant branching behaviour, Jakstab uses and intermediate language(IL). Furthermore, the author of the platform defines a set of statements denoted by \textbf{Stmt}. Assume that $e_1,e_2 \in Exp$ where $Exp$ is the  set of possible expressions. Then, the set \textbf{Stmt} consists of memory assignments $m[e_1] := e_2$,conditional indirect jumps $if e1 jmp e2$, assume statements $assume e1$ and a halt statement.
+\\ \\
+The only data type of the IL is integers. Consequently, booleans are represented by 0 for false and 1 for true. Furthermore, the finite set of program locations is denoted by $L \subseteq N$.This set contains all addresses of the program. A program is denoted as $<\ell_0,P>$ where $\ell$ is a starting location and $P$ is a finite mapping from program locations to statements and successors, More formally, $P$ is defined as $P:: L \rightarrow (Stmt \times L)$. In this thesis, the statement stmt at location $\ell \in L$ with successor $\ell^{'}$ is denoted by $[stmt]^{\ell}_{\ell^{'}}$ 
+
+\subsection{Modifications to the CPA Algorithm}
+The Jakstab tool, which is used for over-approximation, utilizes the Configurable Program Analysis(CPA) framework\cite{cpaAlgo}. The CPA framework uses a standard, generic worklist algorithm.
+
+%fix pow ticks
+%Change rightarrow to rightsquigarrow
+%When to use := or =?
+%Frame border is broken..
+\begin{figure}[t]
+    \centering
+\begin{lstlisting}[style=algorithm]
+Input: A CPA with dynamic precision adjustment 
+    $\mathcal{D}=(D,\Pi,\rightarrow,$merge$,$stop$,$prec$)$, an initial abstract state $a_0 \in A$ with 
+    precision $\pi_0 \in \Pi$ and a CFA as a set of edges G.
+Output: A set of reachable abstract states.
+$worklist = \{(a_0,\pi_0)\}$
+$reached = \{(a_0,\pi_0)\}$
+while $worklist \neq \emptyset$
+    pop $(a,\pi)$ from $worklist$
+    $(\hat{a},\hat{\pi}) = $prec$(a,\pi,reached)$
+    foreach $a^{'}$ with $\exists g \in G$. $\hat{a} \xrightarrow{g} (a^{'},\hat{\pi})$
+        //Attempt to merge with existing abstract states
+        foreach $(a^{''},\pi^{''}) \in reached$
+            $a_{new} = $merge$(a^{'},a^{''},\hat{\pi})$
+            if $a_{new} \neq a^{''}$
+                $worklist = (worklist \cup {(a_{new},\hat{\pi})}) \setminus \{(a^{''},\pi^{''})\}$
+                $reached = (reached \cup {(a_{new},\hat{\pi})}) \setminus \{(a^{''},\pi^{''})\}$
+        //Add new abstract state
+        if $\neg$ stop$(a^{'},\{a|(a,\cdot) \in reached \}, \hat{\pi})$
+            $worklist = worklist \cup {(a^{'},\hat{\pi})}$
+            $reached = reached \cup {(a^{'},\hat{\pi})}$
+return $\{ a|(a,\cdot) \in reached \}$
+\end{lstlisting}
+\caption[The original CPA Algorithm.]{The Original CPA Algorithm.}
+    \label{fig:CPAJakstab}
+\end{figure}
+
+Difference: Reached takes an argument. Diff in out of algo. Uses transformers. More "foreach"
+
+\begin{figure}[t]
+    \centering
+\begin{lstlisting}[style=algorithm]
+Input: A CPA $\mathcal{D}=(D,\Pi,\rightarrow,$merge$,$stop$,$prec$)$, an initial abstract state $a_0 \in A$ 
+with precision $\pi_0 \in \Pi$ and a map P from locations to statements.
+Output: A CFA of P and the set of reachable states.
+$worklist = \{(a_0,\pi_0)\}$
+$reached(a_0(pc)) = \{(a_0,\pi_0)\}$
+$G = \{\}$
+while $worklist \neq \emptyset$
+    pop $(a,\pi)$ from $worklist$
+    $(\hat{a},\hat{\pi}) = $prec$(a,\pi,reached)$
+    foreach $g \in $ getTransformers($\hat{a}$,$P$)
+        foreach $a^{'}$ with $\hat{a} \xrightarrow{g} (a^{'},\hat{\pi})$
+            $G = G \cup g$
+            //Attempt to merge with existing abstract states
+            foreach $(a^{''},\pi^{''}) \in reached$
+                $a_{new} = $merge$(a^{'},a^{''},\hat{\pi})$
+                if $a_{new} \neq a^{''}$
+                    $worklist = (worklist \cup {(a_{new},\hat{\pi})}) \setminus \{(a^{''},\pi^{''})\}$
+                    $reached = (reached \cup {(a_{new},\hat{\pi})}) \setminus \{(a^{''},\pi^{''})\}$
+            //Add new abstract state
+            if $\neg$stop$(a^{'},\{a|(a,\cdot) \in reached \}, \hat{\pi})$
+                $worklist = worklist \cup {(a^{'},\hat{\pi})}$
+                $reached = reached \cup {(a^{'},\hat{\pi})}$
+return $G,\{ a|(a,\cdot) \in reached \}$
+\end{lstlisting}
+\caption[The CPA Algorithm of Jakstab.]{The CPA Algorithm of Jakstab.}
+    \label{fig:CPAJakstab}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+\begin{lstlisting}[style=frame]
+Placeholder
+\end{lstlisting}
+\caption[Modified version of the CPA Algorithm to include DSE input.]{Modified version of the CPA Algorithm to include DSE input.}
+    \label{fig:CPAJakstab}
+\end{figure}
+
 \section{Semantics}
+%Operational vs denotational semantics
+This section presents the semantics of our approach. First, the over-approximation semantics are presented.These semantics are related to the Jakstab platform. Thereafter, the under-approximaiton semantics, corresponding to the DSE, are detailed. Finally, the combined semantics which combines the under and over-approximation semantics is described. These semantics are heavily inspired by previous work by Kinder et al\cite{alternating}.
 
 \subsection{Over-Approximation Semantics}
 %"Jakstab uses a disassembly dictionary and an instruction specification to map machine code bytes to IL statements, which in turn are used to compute the abstract transfer relation between abstract states"
@@ -530,51 +702,150 @@ Since there are no restrictions on the target binaries except for general assump
 %Could be interesting to have a parameter for when to switch to under-approximation. Then one could study what would happen with the coverage and precision if the parameter is changed.
 %The depth-first searches were inferior to the generational searches
 %writing grammars manually is tedious, expensive and scales poorly
+The over-approximation semantics is the same as in the alternating CFG reconstruction paper.
 
 \begin{figure}[h]
     \centering
 \begin{lstlisting}
 placeholder
 \end{lstlisting}
-\caption{Over-Approximation Semantics}
+\caption[Over-Approximation Semantics.]{Over-Approximation Semantics.}
     \label{fig:overApproximationSemantics}
 \end{figure}
 
-
 \subsection{Under-Approximation Semantics}
-
+%Note: Equations are not finished in the listing below
+%\begin{lstlisting}[escapechar=\%]
+%\begin{flushright} $\frac{[if\, B\, jmp\, E]^{l}_{l^{'}} \quad \chi(x) \quad (1,V)\in \gamma^{o}[B,E]S^{o} \quad f^c[assume\, B\, \cup \, E = V](S) = S^{'}}{\langle l,S,G \rangle \rightarrow \langle V,S^{'},G\, \uplus\, (l,V) \rangle}JT^{o}$ \end{flushright}%
+%\begin{flushright} $\frac{[if\, B\, jmp\, E]^{l}_{l^{'}} \quad \chi(x) \quad (1,V)\in \gamma^{o}[B,E]S^{o} \quad f^c[assume\, B\, \cup \, E = V](S) = S^{'}}{\langle l,S,G \rangle \rightarrow \langle V,S^{'},G\, \uplus\, (l,V) \rangle}JT^{u}$ \end{flushright}%
+%\end{lstlisting}
 \subsection{Combined Semantics}
+In this section, the combined semantics is defined. The combined semantics is parameterized by an under-approximation ${(\mathcal{U},\iota^{u},f^{u},\gamma^{u}[\cdot],\cup^{u})}$ and an over-approximation ${(\mathcal{O},\iota^{o},f^{o},\gamma^{o}[\cdot],\cup^{o})}$ where ${\mathcal{U}=(U,\sqcup^{u}, \sqcap^{u}, \sqsubseteq^{u}, \bot^{u}, \top^{u})}$ and ${\mathcal{A}=(A,\sqcup^{o}, \sqcap^{o}, \sqsubseteq^{o}, \bot^{o}, \top^{o})}$. The combined semantics can be defined as ${(\mathcal{C},\iota^{c},f^{c},\gamma^{c}[\cdot],\cup^{c})}$ where $\mathcal{C}$ is a lattice, $\iota^{c}$ is the initial lattice element, $f^{c}$ is the combined transfer function, $\gamma^{c}[\cdot]$ is the concretization function and $\cup^{c}$ is the merging operator. For the combined semantics, $\mathcal{C}$ is a lattice defined as $\mathcal{C}=(C,\sqcup^{c}, \sqcap^{c}, \sqsubseteq^{c}, \bot^{c}, \top^{c})$ where $\sqcup^{c}$, $\sqcap^{c}$ and $\sqsubseteq^{c}$ operate in a pairwise fashion. More formally, if $o_{1},o_{2}\in O$ and $u_{1},u_{2}\in U$ then:
+\begin{center}
+$(o_{1},u_{1})\sqsubseteq^{c}(o_{2},u_{2}) \Leftrightarrow o_{1}\sqsubseteq^{o}o_{2} \wedge u_{1}\sqsubseteq^{u}u_{2}$, \\
+$(o_{1},u_{1})\sqcap^{c}(o_{2},u_{2}) \Leftrightarrow (o_{1}\sqcap^{o}o_{2}, u_{1}\sqcap^{u}u_{2})$ and \\
+$(o_{1},u_{1})\sqcup^{c}(o_{2},u_{2}) \Leftrightarrow (o_{1}\sqcup^{o}o_{2}, u_{1}\sqcup^{u}u_{2})$
+\end{center}
+The initial element $\iota^{c}$ is defined as $\iota^{c}=(\iota^{o},\iota^{u})$ and the combined transfer function is defined as $f^{c}(S^o,S^u) = (f^{o}(S^o), f^{u}(S^u))$. Furthermore, the concretization function $\gamma^{c}[\cdot]$ is defined as $\gamma^{c}[\cdot](S^o,S^u) = S^o$, ignoring the under-approximation part of the state. Finally, the merge operator $\cup^{c}$ is defined as $(S^{o}_{1},S^{u}_{1})\cup^{c}(S^{o}_{2},S^{u}_{2}) = (S^{o}_{1} \cup^{o} S^{o}_{2},S^{u}_{1} \cup^{u} S^{u}_{2})$
+\\ \\
+In this thesis, we let the predicate $\chi$ be defined as True if the over-approximation of the targets of the jump is not equal to top and False otherwise. This is equivalent to using the dynamic symbolic execution for jump targets which can not be resolved by the over-approximation approach. The JumpTrue rule for the combined semantics thus becomes as depicted in Figure \ref{fig:combinedJumpTrue}.
 
 \begin{figure}[h]
     \centering
-
-
-\begin{lstlisting}[escapechar=\%]
-%\begin{flushright} $\frac{[if\, B\, jmp\, E]^{l}_{l^{'}} \quad \chi(x) \quad (1,V)\in \gamma^{o}[B,E]S^{o} \quad f^c[assume\, B\, \cup \, E = V](S) = S^{'}}{\langle l,S,G \rangle \rightarrow \langle V,S^{'},G\, \uplus\, (l,V) \rangle}JT^{o}$ \end{flushright}%
-%\begin{flushright} $\frac{[if\, B\, jmp\, E]^{l}_{l^{'}} \quad \chi(x) \quad (1,V)\in \gamma^{o}[B,E]S^{o} \quad f^c[assume\, B\, \cup \, E = V](S) = S^{'}}{\langle l,S,G \rangle \rightarrow \langle V,S^{'},G\, \uplus\, (l,V) \rangle}JT^{u}$ \end{flushright}%
+\begin{lstlisting}[style=abstractInt]
+$\frac{[if\, B\, jmp\, E]^{\ell}_{\ell^{'}} \quad \chi(S,E) \quad (1,V)\in \gamma^{o}[B,E]S^{o} \quad f^c[assume\, B\, \cap \, E = V](S) = S^{'}}{\langle l,S,G \rangle \rightarrow \langle V,S^{'},G\, \uplus\, (l,V) \rangle}JumpTrue^{o}$
+$\frac{[if\, B\, jmp\, E]^{\ell}_{\ell^{'}} \quad \neg \chi(S,E) \quad (1,V)\in \gamma^{o}[B,E]S^{o} \quad f^c[assume\, B\, \cap \, E = V](S) = S^{'}}{\langle l,S,G \rangle \rightarrow \langle V,S^{'},G\, \uplus\, (l,V) \rangle}JumpTrue^{u}$
 \end{lstlisting}
-
-
-
-\caption{Combined Semantics}
-    \label{fig:overApproximationSemantics}
+\caption[Rules for jump target resolution for the combined Semantics.]{Rules for jump target resolution for the combined Semantics. The function $\chi(S,E)$ where $S=(S^o,S^u)$, decides which of the two rules is enabled.}
+    \label{fig:combinedJumpTrue}
 \end{figure}
-
-
-
- 
 
 \section{Abstract Domains}
 
 \subsection{Constant propagation}
 
 
-\section{Directed Symbolic Execution for Under-Approximation}
-\subsection{Directed Execution}
+\section{ Under-Approximation Through Directed Symbolic Execution}
+%On-demand using manticore server
+%Describe manticore path following algorithm with path ids. Each new symbolic state keeps the pathIds of the previous state. (Proof of correctness through induction?)
+\subsection{Fundamentals of Symbolic Execution}
+
+\subsection{Directed Symbolic Execution}
+The directed symbolic execution(DSE) is performed on demand. More specifically, the manticore platform was extended to act like a server. This server listens to a user-specified port on localhost and waits for a request to arrive. Requests are required to contain a path to a bianry and a set of paths defined by a sequence of PC values. The DSE server symbolically executes the given paths and uses an SMT solver to calculate the possible succesors for the last instruction of each path. We will now proceed by explaining how the symbolic execution is directed into the correct paths and how successors are extracted.
+\\ \\
+Let C be a mapping from a state to an integer-valued constant. This constant is used to track the index of the instruction being executed in a certain state. Furthermore, let A be a mapping from a state to a list of paths that this state can be part of. The pseudocode of the directed symbolic execution is presented in figure \ref{fig:DSEAlgorithm}.
+\\ \\
+Initially, the possible paths which include the initial state $\sigma_{init}$, is set to all paths of interests. This is because the initial state corresponds to the first instruction in the binary which must be the first instruction in each path. Thereafter, the counter of the initial state is set to 1 as the initial state's instruction must be the instruction which is executed first when executing the binary. For other states, this counter will correspond to the number of symbolically executed instructions after the execution of the current state's instruction. Furthermore, the worklist is initially set to only contain the init state and the mapping $T$ which maps paths to successors is initially empty. 
+\\ \\
+The while loop iterates until there are no more elements in the worklist. It starts by obtaining a random element from the worklist. It then updates the alive paths for this state using the update function presented in Figure \ref{fig:DSEupdate}. This function filters the set of paths $A[\sigma_{curr}]$ to only contain paths that contains the address PC at index C. Note that a symbolic state contains symbolic expressions for registers and memory locations. Consequently, the PC value can be obtained from $\sigma_{curr}$. Furthermore, since this state has already been reached, the PC field will contain a concrete value rather than a symbolic expression.
+\\ \\
+After updating the set of alive paths, the algorithm checks if this set is empty. If the set is empty, the state is simply dropped and the algorithm continues by iterating over the remaining states. Otherwise, the map T containing successors of the paths is updated using the extract function presented in Figure \ref{fig:DSEextract}. The extract function uses the set of desired paths, a state, the current PC value, a symbolic expression for the next PC value and the counter of the state to deduce the possible successors of the paths. This is done by iterating over all paths which contains the state $\sigma$ at index C and checking if this index mathes the length of hte path. If this is the case, the symbolic expression for the nextPC value is sent to the underlying SMT solver using the solve function. The SMT solver returns a set of potential solutions which are then put in the mapping for potential successors over the path p.
+\\ \\
+After the worklist algorithm has extracted the path successors and merged them into the map T, the algorithm checks if the instruction corresponding to the current state $\sigma_{curr}$ is a conditional instruction. This is necessary to check since a conditional instruction may have multiple successors whereas an unconditional instruction only may have one successor. If the current state's instruction is a conditional instruction, the algorithm performs a symbolic fork which creates one or two successors. Thereafter, the counter for these states are increased by 1 since the instruction of $\sigma_{curr}$ has been executed. Furthermore, the set of alive paths is set to the set of alive path of $\sigma_{curr}$. Therafter, the new states are added to the worklist.
+\\ \\
+If the current states instruction is not a conditional instruction, the next function is used to obtain the successor state of the current state. The counter and set of alive paths are updated similiarly to the fork. FInally, the successor state is added to the worklist.
+
+\begin{figure}[!htbp]
+    \centering
+\begin{lstlisting}[style=algorithm]
+Input: A program Pr, an initial state $\sigma_{init}$, a set of paths P
+Output: A dictionary T mapping a path to a set of possible successors 
+of this path.
+
+$A[\sigma_{init}] = P$
+$C[\sigma_{init}] = 1$
+worklist = {$ \sigma_{init} $}
+T = {}
+
+while(worklist $\neq \emptyset$)
+    $\sigma_{curr}$ = worklist.pop()
+    $A[\sigma_{curr}]$ = update($A[\sigma_{curr}]$,$C[\sigma_{curr}],\sigma_{curr}.PC$)
+    if ($A[\sigma_{curr}] \neq \emptyset$)
+        $T = T \cup extract(P,\sigma_{curr},\sigma_{curr}.PC,\sigma_{curr}.nextPC,C[\sigma_{curr}])$
+        if (isConditional($\sigma_{curr}$))
+            ($\sigma_1,\sigma_2$) = fork(Pr,$\sigma_{curr}$)
+            $C[\sigma_{1}] = C[\sigma_{curr}] + 1$
+            $C[\sigma_{2}] = C[\sigma_{curr}] + 1$
+            $A[\sigma_{1}] = A[\sigma_{curr}]$
+            $A[\sigma_{2}] = A[\sigma_{curr}]$
+            worklist.push($\sigma_1$)
+            worklist.push($\sigma_2$)
+        else
+            $\sigma_{next} =$ next(Pr,$\sigma_{curr}$)
+            $C[\sigma_{next}] = C[\sigma_{curr}] + 1$
+            $A[\sigma_{next}] = A[\sigma_{curr}]$
+            worklist.push($\sigma_{next}$)
+\end{lstlisting}
+\caption[Pseudocode for the Directed Symbolic Execution]{Pseudocode for the Directed Symbolic Execution}
+    \label{fig:DSEAlgorithm}
+\end{figure}
+
+
+\begin{figure}[!htbp]
+    \centering
+\begin{lstlisting}[style=algorithm]
+Input: A set of alive paths P, a counter C and the current pc value PC. 
+Output: A set of paths denoted by $P_{new}$ which is a subset of P satisfying the
+condition that the addresses at index C of each path equals PC.
+
+$P_{new} = \{\}$
+foreach $p \in P$ such that $C <= length(p)$
+    if $p[C] = PC$:
+        $P_{new} = P_{new} \cup \{p\}$
+\end{lstlisting}
+\caption[The algorithm which given a set of paths, returns a set of paths which satisfy the condition that the address at index C is equal to PC.]{The algorithm which given a set of paths, returns a set of paths which satisfy the condition that the address at index C is equal to PC.}
+    \label{fig:DSEupdate}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+\begin{lstlisting}[style=algorithm]
+Input: A set of paths P, a state $\sigma$, the current pc PC, a set of symbolic constraint 
+for the next PC value nextPC and a counter value C. Each path is a list of instruction
+addresses. 
+Output: A map T mapping a path to a set of possible successors 
+of the last instruction of this path.
+
+$T = \{\}$
+
+foreach path p in P such that length(p) = C $\cap$ last(p) = PC
+    foreach pcValue in solve($\sigma$,nextPC)
+        if T[p] = $\wr$
+            T[p] = {}    
+        $T[p] = T[p] \cup \{pcValue\}$
+
+\end{lstlisting}
+\caption[The algorithm which extracts successors of paths.]{The algorithm which extracts successors of paths.}
+    \label{fig:DSEextract}
+\end{figure}
+
 %Extracting the path: We know that executing the exact same instruction in the same order will give us the exact same state in the end. Thus, we don't have to keep track of the state of all registers and memory locations.
 
 %Describe how we check that state follows paths.
 %Mathematical proof that we only follow the paths
+
+%Directed SE is sound and complete! Soundess is kept when path elimination(?). But soundness can be lost when resolving targets of unres branch as we can maybe not get all the different solutions for the constraint of the next pc value.
+%As jakstab over-approximates the CFA, it might export infeasible paths.
 
 \section{Modifications to the Worklist Algorithm}
 
@@ -623,16 +894,18 @@ The evaluation proceeded as follows for each binary in the selected data set. Fi
 %"During our experiments, however, we used only one core to reduce the effect of nondeterministic task scheduling on the search results." - SAGE (Automatic test generation)
 
 %Describe jakstab, illustrate how it is built
-%Jakstab architecture figure 5.1 in static analysis
+%Jakstab architecture Figure 5.1 in static analysis
 
 %Used socket instead of file because that avoids looks + messages can be queued
 
 \subsection{Path Extraction from Jakstab}
-Each instruction was given a pointer to a previous instruction.
-%A variable was added to each IL statement pointing to a previous IL statement that lead to this one. The prev variable was updated only when intitially reaching a path. This ensures that a loop free path could be found back.
+%(Obsolete) Each instruction was given a pointer to a previous instruction.
+%(Obsolete)A variable was added to each IL statement pointing to a previous IL statement that lead to this one. The prev variable was updated only when intitially reaching a path. This ensures that a loop free path could be found back.
+%(Obsolete)Add formula for prev
+%(Obsolete)O(n) space O(E) time.
+
+
 %Add illustration
-%Add formula for prev
-%O(n) space O(E) time.
 
 %---Malticore---
 %Max size of stdin was set to (f.e)256
