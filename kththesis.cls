@@ -44,7 +44,7 @@
   \fi
 \else
   \RequirePackage[utf8]{inputenc}
-  \RequirePackage[swedish,australian,english]{babel}
+  \RequirePackage[swedish,australian]{babel}
 \fi
 
 \ifgfivepaper
