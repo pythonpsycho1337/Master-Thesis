@@ -1,10 +1,11 @@
 @inproceedings{ABinaryRewriting,
-author = {Prasad, Manish and Chiueh, tzi-cker},
-year = {2003},
-month = {01},
-pages = {211-224},
-title = {A Binary Rewriting Defense Against Stack based Buffer Overflow Attacks.}
+  title={A Binary Rewriting Defense Against Stack based Buffer Overflow Attacks.},
+  author={Prasad, Manish and Chiueh, Tzi-cker},
+  booktitle={USENIX Annual Technical Conference, General Track},
+  pages={211--224},
+  year={2003}
 }
+
 
 @inproceedings{alternating,
  author = {Kinder, Johannes and Kravchenko, Dmitry},
@@ -34,11 +35,15 @@ title = {A Binary Rewriting Defense Against Stack based Buffer Overflow Attacks.
 
 @inproceedings{automatedFuzzing,
     author = {Godefroid, Patrice and Y. Levin, Michael and Molnar, David},
-    year = {2008},
-    month = {01},
-    pages = {},
-    title = {Automated Whitebox Fuzz Testing}
+    title = {Automated Whitebox Fuzz Testing},
+    booktitle={NDSS},
+    volume={8},
+    pages={151--166},
+    year={2008},
+    organization={Citeseer}
 }
+
+
 
 @InProceedings{BAP,
     author="Brumley, David
@@ -253,28 +258,44 @@ title = {A Binary Rewriting Defense Against Stack based Buffer Overflow Attacks.
   volume    = {abs/1812.00140},
   year      = {2018},
   %url       = {http://arxiv.org/abs/1812.00140},
-  archivePrefix = {arXiv},
-  eprint    = {1812.00140},
-  timestamp = {Tue, 01 Jan 2019 15:01:25 +0100},
-  biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1812-00140},
+  %archivePrefix = {arXiv},
+  %eprint    = {1812.00140},
+  %timestamp = {Tue, 01 Jan 2019 15:01:25 +0100},
+  %biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1812-00140},
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 
-@incollection{galoisConnections,
- author = {B\"{o}rner, Ferdinand},
- chapter = {Basics of Galois Connections},
- title = {Complexity of Constraints},
- editor = {Creignou, Nadia and Kolaitis, Phokion G. and Vollmer, Heribert},
- year = {2008},
- %isbn = {978-3-540-92799-0},
- pages = {38--67},
- numpages = {30},
- %url = {http://dx.doi.org/10.1007/978-3-540-92800-3_3},
- %doi = {10.1007/978-3-540-92800-3_3},
- acmid = {1505741},
- publisher = {Springer-Verlag},
- %address = {Berlin, Heidelberg},
-} 
+@Inbook{galoisConnections,
+    author="B{\"o}rner, Ferdinand",
+    editor="Creignou, Nadia
+    and Kolaitis, Phokion G.
+    and Vollmer, Heribert",
+    title="Basics of Galois Connections",
+    bookTitle="Complexity of Constraints: An Overview of Current Research Themes",
+    year="2008",
+    publisher="Springer Berlin Heidelberg",
+%    address="Berlin, Heidelberg",
+    pages="38--67",
+%    abstract="We give an overview of basic properties of Galois connections between sets of relations and sets of functions or generalized functions. First we focus on the Galois connections lnv--Pol and lnv--mPol . Then we use these results to provide some tools for the representation of several closure operators on relations as closure operators of some Galois connections.",
+%    isbn="978-3-540-92800-3",
+%    doi="10.1007/978-3-540-92800-3_3",
+%    url="https://doi.org/10.1007/978-3-540-92800-3_3"
+}
+% @incollection{galoisConnections, %from asm
+%  author = {B\"{o}rner, Ferdinand},
+%  chapter = {Basics of Galois Connections},
+%  title = {Complexity of Constraints},
+%  editor = {Creignou, Nadia and Kolaitis, Phokion G. and Vollmer, Heribert},
+%  year = {2008},
+%  %isbn = {978-3-540-92799-0},
+%  pages = {38--67},
+%  numpages = {30},
+%  %url = {http://dx.doi.org/10.1007/978-3-540-92800-3_3},
+%  %doi = {10.1007/978-3-540-92800-3_3},
+%  acmid = {1505741},
+%  publisher = {Springer-Verlag},
+%  %address = {Berlin, Heidelberg},
+% } 
 
 @online{IDAPro,
   author = {Hex-Rays},
@@ -297,22 +318,21 @@ title = {A Binary Rewriting Defense Against Stack based Buffer Overflow Attacks.
   date = {2009},
 }
 
-
-@inbook{StaticDisAndCodeAnal,%Really supposed to be a book? 
-author = {Vigna, Giovanni},
-year = {2007},
-month = {01},
-pages = {19-41},
-title = {Static Disassembly and Code Analysis},
-volume = {27},
-%doi = {10.1007/978-0-387-44599-1_2}
+@incollection{StaticDisAndCodeAnal,
+  title={Static disassembly and code analysis},
+  author={Vigna, Giovanni},
+  booktitle={Malware Detection},
+  pages={19--41},
+  year={2007},
+  publisher={Springer}
+  %doi = {10.1007/978-0-387-44599-1_2}
 }
 
 @phdthesis{Jakstab,
       author = {Johannes Kinder},
      %address = {Darmstadt},
       school = {Technische Universit{\"a}t},
-       month = {November},
+       month = {11},
         year = {2010},
        title = {Static Analysis of x86 Executables},
 }
@@ -323,6 +343,26 @@ volume = {27},
   year = 2017,
   url = {https://github.com/jkinder/jakstab},
   urldate = {2019-06-03}
+}
+
+@article{Kosaraju,
+  title={A Strong-Connectivity Algorithm and Its Applications in Data Flow Analysis},
+  author={Sharir, Micha},
+  journal={Computers \& Mathematics with Applications},
+  volume={7},
+  number={1},
+  pages={67--72},
+  year={1981},
+  publisher={Elsevier}
+}
+
+@inproceedings{liveness,
+  title={Register Liveness Analysis for Optimizing Dynamic Binary Translation },
+  author={Probst, Mark and Krall, Andreas and Scholz, Bernhard},
+  booktitle={Ninth Working Conference on Reverse Engineering, 2002. Proceedings.},
+  pages={35--44},
+  year={2002},
+  organization={IEEE}
 }
 
 @inproceedings{lazyAbstraction,
@@ -359,7 +399,14 @@ volume = {27},
     keywords={Boolean functions;computability;flow graphs;program verification;precise control flow reconstruction;Boolean logic;SAT based method;control flow graph reconstruction;executable code;register wise value set abstractions;Abstract interpretation;static analysis;binary code;control flow recovery;refinement;SAT solving},
     %doi={10.1145/2038642.2038662},
     ISSN={},
-    month={Oct},
+    month={10},
+}
+
+@article{reachingDefinitions,
+  title={A Comparative Study of Reaching-definitions Analyses},
+  author={Collard, Jean-Fran{\c{c}}ois and Knoop, Jens},
+  year={1998},
+  publisher={Citeseer}
 }
 
 @article{replicability,
@@ -402,6 +449,14 @@ volume = {27},
   year={2000}
 }
 
+@article{Tarjan,
+  title={Depth-First Search and Linear Graph Algorithms},
+  author={Robert E. Tarjan},
+  journal={SIAM J. Comput.},
+  year={1972},
+  volume={1},
+  pages={146-160}
+}
 
 @article{vectorInstructions,
     author={Srinivas Raman and Vladimir Pentkovski and Jagannath Keshava},
@@ -414,7 +469,7 @@ volume = {27},
     keywords={instruction sets;microprocessor chips;streaming SIMD extensions;demanding multimedia;Internet;Pentium III developers;die size constraints;Registers;Floating-point arithmetic;Hidden Markov models;Programming profession;Logic;Computer aided instruction;Streaming media;Clamps;Graphics;Kernel},
     %doi={10.1109/40.865866},
     %ISSN={},
-    month={July},
+    month={7},
 }
 
 @online{XcodeGhost,
